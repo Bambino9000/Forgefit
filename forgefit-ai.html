@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForgeFit AI — Adaptive Training</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080b0f;
+  --surface: #0f1318;
+  --surface2: #161c24;
+  --surface3: #1e2630;
+  --border: #252e3a;
+  --border2: #2e3a48;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --accent3: #39ff8f;
+  --text: #e8edf2;
+  --muted: #6b7d8f;
+  --muted2: #4a5a6a;
+  --red: #ff4466;
+  --yellow: #ffd700;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* SCANLINE EFFECT */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.01) 2px, rgba(0,212,255,0.01) 4px);
+  pointer-events:none; z-index:9999;
+}
+
+/* HEADER */
+header {
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,11,15,0.95);
+  backdrop-filter: blur(16px);
+  position: sticky; top:0; z-index:200;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 4px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width:6px; height:6px; border-radius:50%; background: var(--accent3); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+.header-right { display:flex; align-items:center; gap:16px; }
+.ai-status {
+  display:flex; align-items:center; gap:6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent3);
+  padding: 4px 10px;
+  border: 1px solid rgba(57,255,143,0.2);
+  border-radius: 20px;
+  background: rgba(57,255,143,0.05);
+}
+.ai-dot { width:5px; height:5px; border-radius:50%; background: var(--accent3); animation: pulse 1.5s infinite; }
+
+/* NAV */
+.nav {
+  display:flex;
+  gap:2px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+}
+.nav::-webkit-scrollbar { display:none; }
+.nav-btn {
+  padding: 13px 18px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display:flex; align-items:center; gap:6px;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255,107,53,0.2);
+  color: var(--accent2);
+  border: 1px solid rgba(255,107,53,0.3);
+}
+
+/* MAIN */
+main { max-width: 1100px; margin: 0 auto; padding: 28px; }
+.page { display:none; }
+.page.active { display:block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  position:relative;
+  overflow:hidden;
+}
+.card-glow::before {
+  content:'';
+  position:absolute;
+  top:-1px; left:20px; right:20px; height:1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.card-glow2::before { background: linear-gradient(90deg, transparent, var(--accent3), transparent); }
+.card-glow3::before { background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
+
+.card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 2.5px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display:flex; align-items:center; gap:8px;
+}
+.card-title.green { color: var(--accent3); }
+.card-title.orange { color: var(--accent2); }
+
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.mb { margin-bottom: 18px; }
+
+/* STAT MINI */
+.stat {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align:center;
+}
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38px;
+  line-height: 1;
+  color: var(--accent);
+}
+.stat-lbl { font-size:11px; color: var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+
+/* BUTTONS */
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn-ai {
+  background: linear-gradient(135deg, var(--accent), #0099bb);
+  color: #000;
+  font-weight: 700;
+}
+.btn-ai:hover { filter:brightness(1.15); transform:translateY(-1px); }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-success { background: rgba(57,255,143,0.15); color: var(--accent3); border: 1px solid rgba(57,255,143,0.3); }
+.btn-danger { background: rgba(255,68,102,0.1); color: var(--red); border: 1px solid rgba(255,68,102,0.25); }
+.btn:disabled { opacity:0.4; cursor:not-allowed; transform:none!important; }
+
+/* LOG SECTION */
+.exercise-log-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.exercise-log-item:hover { border-color: var(--border2); }
+.ex-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+.ex-name { font-weight: 600; font-size:15px; }
+.ex-target { font-family:'JetBrains Mono',monospace; font-size:12px; color: var(--accent); background: rgba(0,212,255,0.08); padding:3px 8px; border-radius:6px; border:1px solid rgba(0,212,255,0.15); }
+.set-row { display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+.set-label { font-family:'JetBrains Mono',monospace; font-size:12px; color: var(--muted); width:40px; flex-shrink:0; }
+.set-input {
+  padding: 7px 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  width:75px;
+  outline:none;
+  transition: border-color 0.2s;
+}
+.set-input:focus { border-color: var(--accent); }
+.set-input::placeholder { color: var(--muted2); }
+.set-done { width:28px; height:28px; border-radius:6px; border:1px solid var(--border2); background:none; cursor:pointer; color: var(--muted); font-size:14px; transition:all 0.2s; flex-shrink:0; }
+.set-done.checked { background: rgba(57,255,143,0.15); border-color: rgba(57,255,143,0.4); color: var(--accent3); }
+.rpe-row { display:flex; align-items:center; gap:10px; margin-top:10px; }
+.rpe-label { font-size:12px; color: var(--muted); }
+.rpe-scale { display:flex; gap:4px; }
+.rpe-btn { width:28px; height:28px; border-radius:6px; border:1px solid var(--border); background: var(--surface3); color: var(--muted); font-size:11px; cursor:pointer; transition:all 0.15s; font-family:'JetBrains Mono',monospace; }
+.rpe-btn.active { background: var(--accent2); border-color: var(--accent2); color:#000; font-weight:700; }
+.ex-notes-input {
+  width:100%; margin-top:10px;
+  padding: 8px 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;
+  resize:vertical; min-height:50px;
+  outline:none;
+}
+.ex-notes-input:focus { border-color: var(--border2); }
+.ex-notes-input::placeholder { color: var(--muted2); }
+
+/* SLEEP LOG */
+.sleep-input-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  margin-bottom:16px;
+}
+.field-group { display:flex; flex-direction:column; gap:6px; }
+.field-label { font-size:12px; color: var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+.field-input {
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family:'JetBrains Mono',monospace;
+  font-size:14px;
+  outline:none;
+  transition: border-color 0.2s;
+}
+.field-input:focus { border-color: var(--accent); }
+.range-with-val { display:flex; align-items:center; gap:12px; }
+.range-val { font-family:'Bebas Neue',sans-serif; font-size:28px; color: var(--accent); min-width:32px; }
+input[type=range] {
+  -webkit-appearance:none; flex:1; height:4px;
+  background: var(--surface3); border-radius:2px; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+  background: var(--accent); border:2px solid #000;
+}
+
+/* AI RESPONSE BUBBLE */
+.ai-bubble {
+  background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(0,212,255,0.02));
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 12px;
+  padding: 20px;
+  position:relative;
+  overflow:hidden;
+}
+.ai-bubble::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 30%, transparent);
+}
+.ai-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  color: var(--accent);
+  margin-bottom:10px;
+  display:flex; align-items:center; gap:6px;
+}
+.ai-text {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.ai-text strong { color: var(--accent); }
+.ai-loading {
+  display:flex; align-items:center; gap:10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  color: var(--muted);
+}
+.dots span {
+  display:inline-block;
+  width:5px; height:5px; border-radius:50%; background: var(--accent);
+  animation: dotBounce 1.2s infinite;
+  margin: 0 2px;
+}
+.dots span:nth-child(2) { animation-delay:.2s; }
+.dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* HISTORY LOG */
+.log-entry {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+}
+.log-date { font-family:'JetBrains Mono',monospace; font-size:11px; color: var(--muted); margin-top:4px; }
+.log-title { font-weight:600; font-size:14px; }
+.log-summary { font-size:13px; color: var(--muted); margin-top:3px; line-height:1.4; }
+.log-score { font-family:'Bebas Neue',sans-serif; font-size:32px; text-align:center; }
+.log-score-lbl { font-size:10px; color: var(--muted); text-align:center; }
+
+/* PLAN DISPLAY */
+.plan-exercise {
+  display:flex; align-items:flex-start; gap:14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.plan-exercise:last-child { border-bottom:none; }
+.plan-num { font-family:'Bebas Neue',sans-serif; font-size:32px; color: var(--border2); width:30px; flex-shrink:0; }
+.plan-body { flex:1; }
+.plan-name { font-weight:600; font-size:15px; }
+.plan-why { font-size:12px; color: var(--muted); margin-top:2px; line-height:1.5; }
+.plan-sets { font-family:'JetBrains Mono',monospace; font-size:13px; color: var(--accent3); background: rgba(57,255,143,0.08); padding:4px 10px; border-radius:6px; border:1px solid rgba(57,255,143,0.15); flex-shrink:0; }
+
+/* NUTRITION CARD */
+.meal-item {
+  display:flex; gap:14px; padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  align-items:flex-start;
+}
+.meal-item:last-child { border-bottom:none; }
+.meal-time-badge {
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+  color: var(--accent2); background: rgba(255,107,53,0.08);
+  border:1px solid rgba(255,107,53,0.2); border-radius:6px;
+  padding:3px 8px; white-space:nowrap; flex-shrink:0; margin-top:2px;
+}
+.meal-body { flex:1; }
+.meal-name { font-weight:600; font-size:14px; }
+.meal-desc { font-size:12px; color: var(--muted); margin-top:3px; line-height:1.5; }
+.meal-kcal { font-family:'Bebas Neue',sans-serif; font-size:24px; color: var(--muted); text-align:right; flex-shrink:0; }
+.meal-kcal span { display:block; font-size:10px; color: var(--muted2); font-family:'DM Sans',sans-serif; text-transform:uppercase; }
+
+/* TAG */
+.tag { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.tag-blue { background: rgba(0,212,255,0.1); color: var(--accent); border:1px solid rgba(0,212,255,0.2); }
+.tag-green { background: rgba(57,255,143,0.1); color: var(--accent3); border:1px solid rgba(57,255,143,0.2); }
+.tag-orange { background: rgba(255,107,53,0.1); color: var(--accent2); border:1px solid rgba(255,107,53,0.2); }
+.tag-red { background: rgba(255,68,102,0.1); color: var(--red); border:1px solid rgba(255,68,102,0.2); }
+
+/* SCROLL */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius:3px; }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter:blur(6px);
+  z-index:500;
+  display:none; align-items:center; justify-content:center; padding:20px;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 520px;
+  width:100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position:relative;
+}
+.modal-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color: var(--accent); margin-bottom:16px; }
+.modal-close { position:absolute; top:16px; right:16px; background:none; border:none; color: var(--muted); font-size:20px; cursor:pointer; }
+.modal-close:hover { color: var(--text); }
+
+/* WORKOUT COMPLETE */
+.complete-banner {
+  background: linear-gradient(135deg, rgba(57,255,143,0.1), rgba(0,212,255,0.05));
+  border: 1px solid rgba(57,255,143,0.25);
+  border-radius: 14px;
+  padding: 24px;
+  text-align:center;
+  margin-bottom: 20px;
+}
+.complete-title { font-family:'Bebas Neue',sans-serif; font-size:42px; letter-spacing:3px; color: var(--accent3); }
+.complete-sub { font-size:14px; color: var(--muted); margin-top:6px; }
+
+/* WEEK STRIP */
+.week-strip { display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; }
+.week-strip::-webkit-scrollbar { display:none; }
+.week-day {
+  flex:1; min-width:70px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.week-day:hover { border-color: var(--border2); }
+.week-day.today { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+.week-day.done { border-color: rgba(57,255,143,0.3); background: rgba(57,255,143,0.04); }
+.week-day.rest { opacity:0.5; }
+.week-day-name { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; color: var(--muted); }
+.week-day-icon { font-size:20px; margin:4px 0; }
+.week-day-type { font-size:10px; color: var(--muted); font-weight:600; text-transform:uppercase; }
+
+/* PROFILE */
+.profile-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:20px; }
+.profile-field { display:flex; flex-direction:column; gap:6px; }
+.profile-label { font-size:12px; color: var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+
+/* RESPONSIVE */
+@media(max-width:700px) {
+  main { padding:14px; }
+  .g2,.g3,.g4 { grid-template-columns:1fr; }
+  .g4 { grid-template-columns:1fr 1fr; }
+  header { padding:0 16px; }
+  .nav { padding:0 12px; }
+  .nav-btn { padding:12px 12px; font-size:12px; }
+  .sleep-input-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div> FORGE<span style="color:var(--text)">FIT</span> <span style="font-size:14px;color:var(--muted);letter-spacing:1px">AI</span></div>
+  <div class="header-right">
+    <div class="ai-status"><div class="ai-dot"></div> AI ACTIVE</div>
+  </div>
+</header>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('home',this)">⚡ Today</button>
+  <button class="nav-btn" onclick="showPage('log',this)">✍️ Log Workout</button>
+  <button class="nav-btn" onclick="showPage('sleep',this)">😴 Log Sleep</button>
+  <button class="nav-btn" onclick="showPage('plan',this)">🤖 My Plan</button>
+  <button class="nav-btn" onclick="showPage('nutrition',this)">🥗 Nutrition</button>
+  <button class="nav-btn" onclick="showPage('history',this)">📊 History</button>
+  <button class="nav-btn" onclick="showPage('profile',this)">👤 Profile</button>
+</div>
+
+<main>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div id="home-week-strip"></div>
+
+  <div style="margin-bottom:18px;" id="home-today-card">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="g2 mb">
+    <div class="card card-glow">
+      <div class="card-title">📊 This Week</div>
+      <div id="week-stats">
+        <!-- filled by JS -->
+      </div>
+    </div>
+    <div class="card card-glow2">
+      <div class="card-title green">🤖 AI Insight</div>
+      <div id="home-ai-insight">
+        <div style="color:var(--muted);font-size:14px;">Log your first workout to get personalized AI insights about your performance and recovery!</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-glow3">
+    <div class="card-title orange">⚠️ Recovery Status</div>
+    <div id="recovery-status"></div>
+  </div>
+</div>
+
+<!-- LOG WORKOUT PAGE -->
+<div class="page" id="page-log">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;" id="log-title">LOG TODAY'S WORKOUT</div>
+      <div style="font-size:13px;color:var(--muted);" id="log-subtitle">Based on your plan — adjust sets/reps to what you actually did</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="showPage('plan',document.querySelector('.nav-btn:nth-child(4)'))">View Full Plan</button>
+    </div>
+  </div>
+
+  <div id="workout-form-container">
+    <!-- filled by JS -->
+  </div>
+
+  <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+    <div class="field-group" style="flex:1;min-width:200px;">
+      <div class="field-label">Overall session feeling</div>
+      <div class="range-with-val">
+        <span class="range-val" id="session-feel-val">7</span>
+        <input type="range" min="1" max="10" value="7" id="session-feel" oninput="document.getElementById('session-feel-val').textContent=this.value">
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px;"><span>Crushed 💀</span><span>Felt weak 😞</span></div>
+    </div>
+    <div class="field-group" style="flex:1;min-width:200px;">
+      <div class="field-label">Energy level going in</div>
+      <div class="range-with-val">
+        <span class="range-val" id="energy-val" style="color:var(--accent3)">7</span>
+        <input type="range" min="1" max="10" value="7" id="energy-in" oninput="document.getElementById('energy-val').textContent=this.value">
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px;"><span>Fired up ⚡</span><span>Exhausted 😴</span></div>
+    </div>
+  </div>
+
+  <div class="field-group" style="margin-top:16px;">
+    <div class="field-label">Any pain, discomfort, or notes for the AI</div>
+    <textarea class="ex-notes-input" id="session-notes" placeholder="e.g. 'shoulder felt tight on dips', 'felt strong today', 'ran out of energy on last set'..." style="min-height:70px;"></textarea>
+  </div>
+
+  <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-ai" onclick="saveAndAnalyze()" id="save-btn">
+      🤖 Save & Get AI Analysis
+    </button>
+    <button class="btn btn-ghost" onclick="saveWorkoutOnly()">Save Only</button>
+  </div>
+
+  <div id="ai-analysis-result" style="margin-top:20px;display:none;"></div>
+</div>
+
+<!-- SLEEP LOG PAGE -->
+<div class="page" id="page-sleep">
+  <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;margin-bottom:20px;">LOG SLEEP & RECOVERY</div>
+
+  <div class="card card-glow mb">
+    <div class="card-title">😴 Last Night's Sleep</div>
+    <div class="sleep-input-grid">
+      <div class="field-group">
+        <div class="field-label">Bedtime</div>
+        <input type="time" class="field-input" id="bedtime" value="22:30">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Wake Time</div>
+        <input type="time" class="field-input" id="waketime" value="06:30">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Sleep Quality (1–10)</div>
+        <div class="range-with-val">
+          <span class="range-val" id="quality-val">7</span>
+          <input type="range" min="1" max="10" value="7" id="sleep-quality" oninput="document.getElementById('quality-val').textContent=this.value">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Morning Energy (1–10)</div>
+        <div class="range-with-val">
+          <span class="range-val" id="morning-val" style="color:var(--accent3)">7</span>
+          <input type="range" min="1" max="10" value="7" id="morning-energy" oninput="document.getElementById('morning-val').textContent=this.value">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group mb">
+      <div class="field-label">Muscle Soreness (which muscles?)</div>
+      <input type="text" class="field-input" id="soreness" placeholder="e.g. 'chest and triceps from yesterday, moderate'">
+    </div>
+
+    <div class="g2 mb">
+      <div class="field-group">
+        <div class="field-label">Stress level today (1–10)</div>
+        <div class="range-with-val">
+          <span class="range-val" id="stress-val" style="color:var(--accent2)">4</span>
+          <input type="range" min="1" max="10" value="4" id="stress-level" oninput="document.getElementById('stress-val').textContent=this.value">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Hydration yesterday</div>
+        <select class="field-input" id="hydration">
+          <option value="great">Great (3L+)</option>
+          <option value="good" selected>Good (2–3L)</option>
+          <option value="poor">Poor (under 2L)</option>
+          <option value="bad">Bad (barely drank)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group mb">
+      <div class="field-label">Anything else the AI should know?</div>
+      <textarea class="ex-notes-input" id="sleep-notes" placeholder="e.g. 'ate late', 'drank alcohol', 'had a stressful day at work', 'feeling sick'..."></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ai" onclick="saveSleepAndAnalyze()" id="sleep-save-btn">🤖 Save & Adjust Tomorrow's Plan</button>
+      <button class="btn btn-ghost" onclick="saveSleepOnly()">Save Only</button>
+    </div>
+  </div>
+
+  <div id="sleep-ai-result" style="display:none;"></div>
+</div>
+
+<!-- MY PLAN PAGE -->
+<div class="page" id="page-plan">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;">MY ADAPTIVE PLAN</div>
+      <div style="font-size:13px;color:var(--muted);">AI-updated based on your logged performance</div>
+    </div>
+    <button class="btn btn-ai" onclick="regeneratePlan()">🔄 Regenerate Plan</button>
+  </div>
+
+  <div id="plan-content">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- NUTRITION PAGE -->
+<div class="page" id="page-nutrition">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;">NUTRITION PLAN</div>
+      <div style="font-size:13px;color:var(--muted);" id="nutrition-subtitle">Adapted to your training load and recovery</div>
+    </div>
+    <button class="btn btn-ai" onclick="regenerateNutrition()">🔄 Recalculate</button>
+  </div>
+  <div id="nutrition-content"><!-- filled by JS --></div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;margin-bottom:20px;">TRAINING LOG</div>
+  <div id="history-list"><!-- filled by JS --></div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div class="page" id="page-profile">
+  <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;margin-bottom:20px;">YOUR PROFILE</div>
+  <div class="card card-glow mb">
+    <div class="card-title">📋 Personal Stats</div>
+    <div class="profile-grid">
+      <div class="profile-field"><div class="profile-label">Name</div><input type="text" class="field-input" id="p-name" placeholder="Your name"></div>
+      <div class="profile-field"><div class="profile-label">Age</div><input type="number" class="field-input" id="p-age" value="33"></div>
+      <div class="profile-field"><div class="profile-label">Weight (kg)</div><input type="number" class="field-input" id="p-weight" value="82" step="0.5"></div>
+      <div class="profile-field"><div class="profile-label">Height (cm)</div><input type="number" class="field-input" id="p-height" value="176"></div>
+      <div class="profile-field"><div class="profile-label">Training Background</div>
+        <select class="field-input" id="p-background">
+          <option value="powerlifter">Powerlifter (returning)</option>
+          <option value="beginner">Complete beginner</option>
+          <option value="intermediate">Intermediate athlete</option>
+          <option value="advanced">Advanced athlete</option>
+        </select>
+      </div>
+      <div class="profile-field"><div class="profile-label">Months training (current stint)</div><input type="number" class="field-input" id="p-months" value="3"></div>
+    </div>
+    <div class="field-group mb">
+      <div class="profile-label">Primary Goal</div>
+      <select class="field-input" id="p-goal">
+        <option value="calisthenics_skills">Build calisthenics skills (muscle-up, handstand)</option>
+        <option value="strength">Maximize strength</option>
+        <option value="fat_loss">Fat loss + muscle retention</option>
+        <option value="conditioning">CrossFit conditioning</option>
+        <option value="general">General fitness</option>
+      </select>
+    </div>
+    <div class="field-group mb">
+      <div class="profile-label">Injuries / Limitations (if any)</div>
+      <input type="text" class="field-input" id="p-injuries" placeholder="e.g. 'left knee discomfort', 'old lower back issue'">
+    </div>
+    <button class="btn btn-ai" onclick="saveProfile()">💾 Save Profile</button>
+  </div>
+</div>
+
+</main>
+
+<!-- AI MODAL -->
+<div class="modal-overlay" id="ai-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">AI ANALYSIS</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let state = {
+  profile: {
+    name: '', age: 33, weight: 82, height: 176,
+    background: 'powerlifter', months: 3,
+    goal: 'calisthenics_skills', injuries: ''
+  },
+  workoutLogs: [],
+  sleepLogs: [],
+  currentPlan: null,
+  currentNutrition: null,
+  weekOffset: 0
+};
+
+// ===== STORAGE =====
+async function saveState() {
+  try { await window.storage.set('forgefit-state', JSON.stringify(state)); } catch(e) {}
+}
+async function loadState() {
+  try {
+    const r = await window.storage.get('forgefit-state');
+    if (r && r.value) {
+      const saved = JSON.parse(r.value);
+      state = { ...state, ...saved };
+    }
+  } catch(e) {}
+}
+
+// ===== YOUR SCHEDULE =====
+// Sun-Mon-Wed-Thu-Fri = Gym at work, 16:00–19:00
+// Saturday = Home/gym, evening session
+// Tuesday = ONLY rest day
+// Array index matches JS getDay(): 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+
+const DEFAULT_PLAN = {
+  days: [
+    // 0 — Sunday (work gym 16:00–19:00) — start week with Upper Push/Pull
+    { day: 'Sunday', type: 'Upper Calisthenics', focus: 'Push & Pull', gym: true, time: '16:00–19:00', exercises: [
+      { name: 'Pull-Ups (Wide Grip)', sets: 4, reps: '5–8', rest: '90s', note: 'Full ROM, dead hang start. Priority skill.' },
+      { name: 'Dips (Parallel Bars)', sets: 3, reps: '8–10', rest: '90s', note: 'Lean forward slightly for chest emphasis' },
+      { name: 'Push-Up Variations', sets: 3, reps: '12–15', rest: '60s', note: 'Wide → Diamond → Pike progression' },
+      { name: 'Australian Pull-Ups (Bar Rows)', sets: 3, reps: '12', rest: '60s', note: 'Rear delts + mid-back horizontal pull' },
+      { name: 'Hollow Body Hold', sets: 3, reps: '30s', rest: '45s', note: 'Core foundation — essential for all skills' },
+    ]},
+    // 1 — Monday (work gym 16:00–19:00) — Lower body after upper
+    { day: 'Monday', type: 'Lower + Core', focus: 'Legs & Compression', gym: true, time: '16:00–19:00', exercises: [
+      { name: 'Pistol Squat Progression', sets: 4, reps: '8–10 each', rest: '90s', note: 'Use TRX/rings for assist → work toward freestanding' },
+      { name: 'Romanian Deadlift (Barbell or DB)', sets: 4, reps: '10–12', rest: '75s', note: 'Your powerlifting base — load these properly' },
+      { name: 'Nordic Hamstring Curls', sets: 3, reps: '5–8', rest: '90s', note: 'Injury prevention king — slow eccentric focus' },
+      { name: 'L-Sit Progression', sets: 4, reps: 'max hold', rest: '60s', note: 'Parallel bars or floor. Build to 30s hold.' },
+      { name: 'Hanging Knee Raises → Toes to Bar', sets: 3, reps: '12–15', rest: '45s', note: 'Progress to straight-leg raises as you get stronger' },
+    ]},
+    // 2 — Tuesday — ONLY REST DAY
+    { day: 'Tuesday', type: 'Rest', focus: 'Full Recovery', gym: false, time: null, exercises: [] },
+    // 3 — Wednesday (work gym 16:00–19:00) — CrossFit / Conditioning
+    { day: 'Wednesday', type: 'CrossFit WOD', focus: 'Conditioning + Power', gym: true, time: '16:00–19:00', exercises: [
+      { name: 'Warm-Up: Row / Run 500m', sets: 1, reps: '—', rest: '—', note: 'Get heart rate to ~140bpm before WOD' },
+      { name: 'WOD: Box Jumps', sets: 5, reps: '10', rest: 'AMRAP 20min', note: 'Explosive hips — use your powerlifting drive' },
+      { name: 'WOD: Kettlebell Swings', sets: 5, reps: '15', rest: 'AMRAP 20min', note: 'Russian style, hip hinge focus, 24–32kg' },
+      { name: 'WOD: Burpee Pull-Ups', sets: 5, reps: '8', rest: 'AMRAP 20min', note: 'Combines conditioning + pulling strength' },
+      { name: 'Cool-Down + Mobility', sets: 1, reps: '8 min', rest: '—', note: 'Hip flexors, T-spine, lat stretch' },
+    ]},
+    // 4 — Thursday (work gym 16:00–19:00) — Skill Work day
+    { day: 'Thursday', type: 'Skill Work', focus: 'Handstand + Muscle-Up Prep', gym: true, time: '16:00–19:00', exercises: [
+      { name: 'Handstand Wall Hold', sets: 5, reps: '30–45s', rest: '60s', note: 'Kick up to wall, work toward freestanding balance' },
+      { name: 'Bar Muscle-Up (Banded)', sets: 4, reps: '3–5', rest: '120s', note: 'Pull explosively past bar then press out — use band to learn timing' },
+      { name: 'Ring Support Hold', sets: 4, reps: '30s', rest: '60s', note: 'Locked out at top of ring dip — essential ring stability' },
+      { name: 'Back Bridge + Shoulder Mobility', sets: 3, reps: '10 reps / 30s hold', rest: '45s', note: 'Open chest & shoulders for overhead work' },
+      { name: 'Planche Lean Progression', sets: 3, reps: '20s', rest: '45s', note: 'Protracted scapula, lean forward on straight arms' },
+    ]},
+    // 5 — Friday (work gym 16:00–19:00) — Upper pulling focus (after Thursday skill)
+    { day: 'Friday', type: 'Upper Strength', focus: 'Pull Strength + Pressing', gym: true, time: '16:00–19:00', exercises: [
+      { name: 'Weighted Pull-Ups (Dip Belt)', sets: 4, reps: '4–6', rest: '120s', note: 'Add 5–10kg — your powerlifting base handles this' },
+      { name: 'Pike Push-Ups / Handstand Push-Up Progression', sets: 4, reps: '6–10', rest: '90s', note: 'Overhead pressing pattern for handstand push-ups' },
+      { name: 'Chest-to-Bar Pull-Ups', sets: 3, reps: '5–7', rest: '90s', note: 'Higher pull = muscle-up prerequisite' },
+      { name: 'Dip Variations (Ring or Bar)', sets: 3, reps: '10–12', rest: '75s', note: 'Add weight if bodyweight feels easy' },
+      { name: 'Ab Wheel Rollout', sets: 3, reps: '8–12', rest: '45s', note: 'Full extension, controlled return — elite core exercise' },
+    ]},
+    // 6 — Saturday — Home or gym, EVENING session (flexible time)
+    { day: 'Saturday', type: 'Full Body + Conditioning', focus: 'Mixed Strength & Cardio', gym: false, time: 'Evening', exercises: [
+      { name: 'Pull-Up Ladder (1-2-3-4-5)', sets: 3, reps: 'ladder × 3', rest: '90s', note: 'Go up to 5 and back — volume without fatigue spike' },
+      { name: 'Pistol Squats', sets: 4, reps: '6 each', rest: '75s', note: 'No support — true single leg strength test' },
+      { name: 'Push-Up Max Set × 3', sets: 3, reps: 'max reps', rest: '90s', note: 'Track weekly progress — aim to beat last week' },
+      { name: 'Core Circuit: Hollow → Superman → L-Sit', sets: 3, reps: '30s each', rest: '30s between', note: 'No rest within the circuit, full antagonist cycle' },
+      { name: 'Light Run or Jump Rope', sets: 1, reps: '15–20 min', rest: '—', note: 'Conversational pace — Zone 2 cardio base building' },
+    ]},
+  ]
+};
+
+const DEFAULT_NUTRITION = {
+  trainingDay: {
+    calories: 2650, protein: 180, carbs: 300, fat: 70,
+    meals: [
+      { time: '07:00', name: 'Breakfast', desc: '4 eggs scrambled + 80g oats + banana + OJ', kcal: 720, protein: 40 },
+      { time: '10:30', name: 'Mid-Morning Snack', desc: 'Greek yogurt 200g + 30g nuts + apple', kcal: 380, protein: 20 },
+      { time: '13:00', name: 'Lunch (pre-gym fuel)', desc: '200g chicken + 150g rice + salad + olive oil — 2.5h before gym', kcal: 720, protein: 50 },
+      { time: '15:00', name: '⚡ Pre-Workout (1h before)', desc: 'Banana + 1 tbsp peanut butter + black coffee (optional)', kcal: 220, protein: 5 },
+      { time: '19:00–19:30', name: '🏁 Post-Workout (CRITICAL — within 40 min)', desc: 'Whey shake 40g in milk + 2 rice cakes with honey', kcal: 420, protein: 45 },
+      { time: '21:00', name: 'Dinner', desc: '200g salmon or lean beef + sweet potato + large salad', kcal: 680, protein: 45 },
+    ]
+  },
+  restDay: {  // Tuesday only
+    calories: 2150, protein: 175, carbs: 220, fat: 68,
+    meals: [
+      { time: '07:30', name: 'Breakfast', desc: '3 eggs + oats + fruit', kcal: 580, protein: 35 },
+      { time: '12:00', name: 'Lunch', desc: '180g turkey or tuna + quinoa + salad', kcal: 620, protein: 50 },
+      { time: '16:00', name: 'Afternoon Snack', desc: 'Cottage cheese 200g + berries', kcal: 270, protein: 25 },
+      { time: '19:30', name: 'Dinner', desc: '180g beef + roasted vegetables + small potato', kcal: 600, protein: 45 },
+    ]
+  }
+};
+
+// ===== AI CALL =====
+async function callAI(systemPrompt, userMessage, streaming = false) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  });
+  const data = await response.json();
+  if (data.content && data.content[0]) return data.content[0].text;
+  throw new Error('No response from AI');
+}
+
+function getUserContext() {
+  const p = state.profile;
+  const lastWorkouts = state.workoutLogs.slice(-7);
+  const lastSleep = state.sleepLogs.slice(-7);
+  return `
+USER PROFILE:
+- Name: ${p.name || 'User'}, Age: ${p.age}, Weight: ${p.weight}kg, Height: ${p.height}cm
+- Background: Returning powerlifter (married, took years off, now 3 months back into training)
+- Goal: ${p.goal}
+- Months training (this stint): ${p.months}
+- Injuries: ${p.injuries || 'none reported'}
+
+WEEKLY SCHEDULE (fixed — do not suggest changing):
+- Sunday: TRAIN — Work gym 16:00–19:00 (Upper Calisthenics)
+- Monday: TRAIN — Work gym 16:00–19:00 (Lower + Core)
+- Tuesday: REST — Only rest day of the week
+- Wednesday: TRAIN — Work gym 16:00–19:00 (CrossFit WOD)
+- Thursday: TRAIN — Work gym 16:00–19:00 (Skill Work)
+- Friday: TRAIN — Work gym 16:00–19:00 (Upper Strength)
+- Saturday: TRAIN — Evening session, home or gym (Full Body + Conditioning)
+Works Sunday–Thursday. Gym is at workplace, accessible 16:00–19:00 on those days.
+
+RECENT WORKOUT LOGS (last 7):
+${lastWorkouts.length ? lastWorkouts.map(w => `
+  Date: ${w.date}, Type: ${w.type}
+  Session Feel: ${w.sessionFeel}/10, Energy In: ${w.energyIn}/10
+  Notes: ${w.notes || 'none'}
+  Exercises: ${w.exercises.map(e => `${e.name}: ${e.sets.map(s => s.done ? `${s.reps}${s.weight?'@'+s.weight+'kg':''} RPE${s.rpe||'?'}` : 'skipped').join(', ')}`).join(' | ')}
+`).join('\n') : 'No workouts logged yet.'}
+
+RECENT SLEEP LOGS (last 7):
+${lastSleep.length ? lastSleep.map(s => `
+  Date: ${s.date}, Hours: ${s.hours}h, Quality: ${s.quality}/10, Morning Energy: ${s.morningEnergy}/10, Stress: ${s.stress}/10, Soreness: ${s.soreness || 'none'}, Hydration: ${s.hydration}, Notes: ${s.notes || 'none'}
+`).join('\n') : 'No sleep logs yet.'}
+  `.trim();
+}
+
+// ===== UI HELPERS =====
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'log') buildWorkoutForm();
+  if (id === 'plan') renderPlan();
+  if (id === 'history') renderHistory();
+  if (id === 'nutrition') renderNutrition();
+  if (id === 'home') renderHome();
+  if (id === 'profile') loadProfile();
+}
+
+function showLoading(elId) {
+  document.getElementById(elId).innerHTML = `
+    <div class="ai-bubble">
+      <div class="ai-label"><span>🤖</span> CLAUDE IS ANALYZING</div>
+      <div class="ai-loading">
+        Processing your data <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>`;
+  document.getElementById(elId).style.display = 'block';
+}
+
+function showAIResult(elId, text, title = 'AI ANALYSIS') {
+  document.getElementById(elId).innerHTML = `
+    <div class="ai-bubble">
+      <div class="ai-label"><span>🤖</span> ${title}</div>
+      <div class="ai-text">${formatAIText(text)}</div>
+    </div>`;
+}
+
+function formatAIText(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^### (.*)/gm, '<br><strong style="color:var(--accent);font-size:15px;">$1</strong><br>')
+    .replace(/^## (.*)/gm, '<br><strong style="color:var(--accent);font-size:16px;">$1</strong><br>')
+    .replace(/^- (.*)/gm, '• $1')
+    .replace(/\n/g, '<br>');
+}
+
+function closeModal() { document.getElementById('ai-modal').classList.remove('open'); }
+
+// ===== HOME =====
+function renderHome() {
+  // Plan array index = JS getDay(): 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  const todayIdx = new Date().getDay();
+  const planDays = DEFAULT_PLAN.days;
+
+  let strip = '';
+  planDays.forEach((d, i) => {
+    const isToday = i === todayIdx;
+    const hasLog = state.workoutLogs.some(w => {
+      const wd = new Date(w.date);
+      const diff = Math.floor((new Date() - wd) / 86400000);
+      return diff < 7 && wd.getDay() === i;
+    });
+    const isRest = !d.exercises.length;
+    const gymBadge = d.gym ? `<div style="font-size:9px;color:var(--accent);margin-top:2px;">🏢 ${d.time}</div>` : d.time ? `<div style="font-size:9px;color:var(--accent2);margin-top:2px;">🌆 ${d.time}</div>` : '';
+    strip += `<div class="week-day ${isToday?'today':''} ${hasLog?'done':''} ${isRest?'rest':''}" onclick="showPage('log',document.querySelector('.nav-btn:nth-child(2)'))">
+      <div class="week-day-name">${d.day.substring(0,3).toUpperCase()}</div>
+      <div class="week-day-icon">${hasLog ? '✅' : isRest ? '😴' : isToday ? '⚡' : '○'}</div>
+      <div class="week-day-type">${isRest ? 'REST' : d.type.split(' ')[0]}</div>
+      ${gymBadge}
+    </div>`;
+  });
+  document.getElementById('home-week-strip').innerHTML = `<div class="week-strip">${strip}</div>`;
+
+  // Today card
+  const todayPlan = planDays[todayIdx];
+  const isRestDay = !todayPlan.exercises.length;
+  const gymInfo = todayPlan.gym
+    ? `<span class="tag tag-blue" style="margin-top:8px;display:inline-flex;">🏢 Work Gym · ${todayPlan.time}</span>`
+    : todayPlan.time
+      ? `<span class="tag tag-orange" style="margin-top:8px;display:inline-flex;">🌆 Home / Any Gym · ${todayPlan.time}</span>`
+      : '';
+  document.getElementById('home-today-card').innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(255,107,53,0.04));border:1px solid rgba(0,212,255,0.2);border-radius:14px;padding:22px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;">TODAY — ${new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'})}</div>
+        <div style="font-family:'Bebas Neue';font-size:38px;letter-spacing:2px;color:var(--accent);margin-top:4px;">${todayPlan.type.toUpperCase()}</div>
+        <div style="font-size:14px;color:var(--muted);margin-top:4px;">${todayPlan.focus} ${isRestDay ? '— recover strong, prep for tomorrow' : `· ${todayPlan.exercises.length} exercises`}</div>
+        <div style="margin-top:8px;">${gymInfo}</div>
+      </div>
+      ${isRestDay ? '<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;"><span class="tag tag-green">😴 ONLY REST DAY</span><div style="font-size:12px;color:var(--muted);text-align:right;">Tuesday is your sole recovery day.<br>6 training days ahead — recharge!</div></div>' : `<button class="btn btn-ai" onclick="showPage('log',document.querySelector('.nav-btn:nth-child(2))'))">Start & Log →</button>`}
+    </div>`;
+
+  // Week stats
+  const weekLogs = state.workoutLogs.filter(w => {
+    const d = new Date(w.date);
+    return (new Date() - d) <= 7 * 86400000;
+  });
+  const avgFeel = weekLogs.length ? (weekLogs.reduce((a,b) => a + b.sessionFeel, 0) / weekLogs.length).toFixed(1) : '—';
+  const lastSleep = state.sleepLogs[state.sleepLogs.length - 1];
+
+  document.getElementById('week-stats').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div style="text-align:center;background:var(--surface2);border-radius:10px;padding:14px;">
+        <div style="font-family:'Bebas Neue';font-size:36px;color:var(--accent);">${weekLogs.length}</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Sessions</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:10px;padding:14px;">
+        <div style="font-family:'Bebas Neue';font-size:36px;color:var(--accent3);">${avgFeel}</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Avg Feel</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:10px;padding:14px;">
+        <div style="font-family:'Bebas Neue';font-size:36px;color:var(--accent2);">${lastSleep ? lastSleep.hours + 'h' : '—'}</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Last Sleep</div>
+      </div>
+    </div>`;
+
+  // Recovery status
+  const soreness = lastSleep?.soreness;
+  const stressHigh = lastSleep?.stress >= 7;
+  const poorSleep = lastSleep?.quality <= 4 || (lastSleep && lastSleep.hours < 6.5);
+  const concerns = [];
+  if (soreness && soreness.length > 3) concerns.push(`Soreness: ${soreness}`);
+  if (stressHigh) concerns.push('High stress detected');
+  if (poorSleep) concerns.push('Insufficient sleep recovery');
+
+  document.getElementById('recovery-status').innerHTML = concerns.length ? `
+    <div style="font-size:14px;line-height:1.8;color:var(--muted);">
+      ${concerns.map(c => `⚠️ <span style="color:var(--accent2);">${c}</span>`).join('<br>')}
+      <br><span style="font-size:12px;color:var(--muted2);">Consider reducing intensity today or adding extra rest.</span>
+    </div>` : `
+    <div style="font-size:14px;color:var(--accent3);">✅ Recovery looks good — you're cleared to train at full intensity today.</div>
+    ${state.workoutLogs.length === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;">Log your first workout to start getting real recovery insights!</div>' : ''}`;
+
+  // AI insight from last log
+  if (state.workoutLogs.length > 0 || state.sleepLogs.length > 0) {
+    const lastLog = state.workoutLogs[state.workoutLogs.length - 1];
+    if (lastLog?.aiInsight) {
+      document.getElementById('home-ai-insight').innerHTML = `<div class="ai-text" style="font-size:13px;">${formatAIText(lastLog.aiInsight.substring(0, 400) + (lastLog.aiInsight.length > 400 ? '...' : ''))}</div>`;
+    }
+  }
+}
+
+// ===== WORKOUT FORM =====
+function buildWorkoutForm() {
+  const todayIdx = new Date().getDay(); // 0=Sun,1=Mon,...,6=Sat — matches plan array directly
+  const plan = DEFAULT_PLAN.days[todayIdx];
+
+  document.getElementById('log-title').textContent = `LOG — ${plan.type.toUpperCase()}`;
+  document.getElementById('log-subtitle').textContent = `${plan.focus} · ${plan.exercises.length} exercises`;
+
+  if (!plan.exercises.length) {
+    document.getElementById('workout-form-container').innerHTML = `
+      <div class="ai-bubble" style="text-align:center;padding:40px;">
+        <div style="font-size:40px;margin-bottom:12px;">😴</div>
+        <div style="font-family:'Bebas Neue';font-size:24px;color:var(--accent3);">REST DAY</div>
+        <div style="font-size:14px;color:var(--muted);margin-top:8px;">Today is a scheduled rest day. Log your sleep and recovery instead.</div>
+        <button class="btn btn-ghost" style="margin-top:16px;" onclick="showPage('sleep',document.querySelector('.nav-btn:nth-child(3))'))">Log Sleep & Recovery →</button>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  plan.exercises.forEach((ex, ei) => {
+    let setsHtml = '';
+    for (let s = 1; s <= (parseInt(ex.sets) || 3); s++) {
+      setsHtml += `
+        <div class="set-row">
+          <div class="set-label">SET ${s}</div>
+          <input class="set-input" type="number" placeholder="reps" id="ex${ei}-s${s}-reps" min="0">
+          <input class="set-input" type="number" placeholder="kg" id="ex${ei}-s${s}-weight" min="0" step="0.5">
+          <button class="set-done" id="ex${ei}-s${s}-done" onclick="toggleDone(this)">✓</button>
+        </div>`;
+    }
+
+    html += `
+      <div class="exercise-log-item">
+        <div class="ex-header">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${ex.note}</div>
+          </div>
+          <div class="ex-target">${ex.sets} × ${ex.reps}</div>
+        </div>
+        ${setsHtml}
+        <div class="rpe-row">
+          <div class="rpe-label">RPE:</div>
+          <div class="rpe-scale" id="ex${ei}-rpe">
+            ${[6,7,8,9,10].map(r => `<button class="rpe-btn" data-rpe="${r}" onclick="selectRPE(this,'ex${ei}-rpe')">${r}</button>`).join('')}
+          </div>
+          <div style="font-size:11px;color:var(--muted2);margin-left:4px;">(effort level)</div>
+        </div>
+        <textarea class="ex-notes-input" id="ex${ei}-notes" placeholder="Notes (optional): form issues, pain, felt easy/hard..."></textarea>
+      </div>`;
+  });
+
+  document.getElementById('workout-form-container').innerHTML = html;
+  document.getElementById('ai-analysis-result').style.display = 'none';
+}
+
+function toggleDone(btn) { btn.classList.toggle('checked'); }
+function selectRPE(btn, groupId) {
+  document.querySelectorAll(`#${groupId} .rpe-btn`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ===== SAVE WORKOUT =====
+function collectWorkoutData() {
+  const todayIdx = new Date().getDay();
+  const plan = DEFAULT_PLAN.days[todayIdx];
+  const exercises = plan.exercises.map((ex, ei) => {
+    const sets = [];
+    for (let s = 1; s <= (parseInt(ex.sets) || 3); s++) {
+      const repsEl = document.getElementById(`ex${ei}-s${s}-reps`);
+      const weightEl = document.getElementById(`ex${ei}-s${s}-weight`);
+      const doneEl = document.getElementById(`ex${ei}-s${s}-done`);
+      const rpeEl = document.querySelector(`#ex${ei}-rpe .rpe-btn.active`);
+      if (repsEl) sets.push({
+        set: s,
+        reps: repsEl.value ? parseInt(repsEl.value) : null,
+        weight: weightEl?.value ? parseFloat(weightEl.value) : null,
+        done: doneEl?.classList.contains('checked') || false,
+        rpe: rpeEl ? parseInt(rpeEl.dataset.rpe) : null
+      });
+    }
+    return { name: ex.name, target: `${ex.sets}×${ex.reps}`, sets, notes: document.getElementById(`ex${ei}-notes`)?.value || '' };
+  });
+  return {
+    date: new Date().toISOString(),
+    type: plan.type,
+    focus: plan.focus,
+    exercises,
+    sessionFeel: parseInt(document.getElementById('session-feel')?.value || 7),
+    energyIn: parseInt(document.getElementById('energy-in')?.value || 7),
+    notes: document.getElementById('session-notes')?.value || '',
+    aiInsight: null
+  };
+}
+
+function saveWorkoutOnly() {
+  const log = collectWorkoutData();
+  state.workoutLogs.push(log);
+  saveState();
+  alert('✅ Workout saved!');
+}
+
+async function saveAndAnalyze() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+
+  const log = collectWorkoutData();
+  showLoading('ai-analysis-result');
+
+  try {
+    const context = getUserContext();
+    const workoutSummary = log.exercises.map(e =>
+      `${e.name}: ${e.sets.map(s => s.done ? `${s.reps||'?'}reps${s.weight?'@'+s.weight+'kg':''} RPE${s.rpe||'?'}` : '(skipped)').join(', ')} — Notes: "${e.notes || 'none'}"`
+    ).join('\n');
+
+    const analysis = await callAI(
+      `You are an expert personal trainer and coach specializing in calisthenics, CrossFit, and returning athletes. You analyze workout logs and give personalized, actionable feedback. Be specific, encouraging, and direct. Use the user's actual data. Keep response under 350 words. Format with clear sections using **bold** for headers.`,
+      `${context}
+
+TODAY'S WORKOUT LOG:
+Type: ${log.type} — ${log.focus}
+Session Feel: ${log.sessionFeel}/10, Energy Going In: ${log.energyIn}/10
+Notes: "${log.notes || 'none'}"
+
+Exercise Results:
+${workoutSummary}
+
+Please provide:
+1. **Performance Assessment** — How did they do vs targets? What's improving?
+2. **Key Observations** — Any patterns in RPE, rep quality, exercises they're excelling/struggling with?
+3. **Tomorrow's Adjustment** — Should they change anything for next session?
+4. **One Focus Point** — Single most important thing to improve.`
+    );
+
+    log.aiInsight = analysis;
+    state.workoutLogs.push(log);
+    saveState();
+    showAIResult('ai-analysis-result', analysis, 'WORKOUT ANALYSIS');
+  } catch(e) {
+    document.getElementById('ai-analysis-result').innerHTML = `<div style="color:var(--red);font-size:14px;">⚠️ AI analysis failed. Workout saved without analysis.</div>`;
+    document.getElementById('ai-analysis-result').style.display = 'block';
+    state.workoutLogs.push(log);
+    saveState();
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🤖 Save & Get AI Analysis';
+}
+
+// ===== SLEEP =====
+function collectSleepData() {
+  const bed = document.getElementById('bedtime').value;
+  const wake = document.getElementById('waketime').value;
+  let hours = 0;
+  if (bed && wake) {
+    const [bh,bm] = bed.split(':').map(Number);
+    const [wh,wm] = wake.split(':').map(Number);
+    let mins = (wh*60+wm) - (bh*60+bm);
+    if (mins < 0) mins += 1440;
+    hours = Math.round(mins / 60 * 10) / 10;
+  }
+  return {
+    date: new Date().toISOString(),
+    bedtime: bed, waketime: wake, hours,
+    quality: parseInt(document.getElementById('sleep-quality').value),
+    morningEnergy: parseInt(document.getElementById('morning-energy').value),
+    soreness: document.getElementById('soreness').value,
+    stress: parseInt(document.getElementById('stress-level').value),
+    hydration: document.getElementById('hydration').value,
+    notes: document.getElementById('sleep-notes').value,
+    aiAdjustment: null
+  };
+}
+
+function saveSleepOnly() {
+  const log = collectSleepData();
+  state.sleepLogs.push(log);
+  saveState();
+  alert(`✅ Sleep logged: ${log.hours} hours`);
+}
+
+async function saveSleepAndAnalyze() {
+  const btn = document.getElementById('sleep-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+
+  const log = collectSleepData();
+  showLoading('sleep-ai-result');
+
+  try {
+    const context = getUserContext();
+    const adjustment = await callAI(
+      `You are an expert in athletic recovery, sleep science, and periodization. Based on sleep and recovery data, you adjust training recommendations for the next session. Be specific and practical. Under 300 words. Use **bold** for section headers.`,
+      `${context}
+
+TODAY'S SLEEP/RECOVERY LOG:
+Sleep: ${log.hours}h (${log.bedtime} → ${log.waketime})
+Sleep Quality: ${log.quality}/10
+Morning Energy: ${log.morningEnergy}/10
+Soreness: ${log.soreness || 'none reported'}
+Stress Level: ${log.stress}/10
+Hydration Yesterday: ${log.hydration}
+Notes: "${log.notes || 'none'}"
+
+Based on this, please provide:
+1. **Recovery Score** — Overall readiness today (out of 10) and why
+2. **Training Adjustment** — Should today's planned workout change? How?
+3. **Nutrition Tweak** — Any changes to today's nutrition based on recovery?
+4. **Tonight's Sleep Target** — Specific advice for better recovery tonight`
+    );
+
+    log.aiAdjustment = adjustment;
+    state.sleepLogs.push(log);
+    saveState();
+    showAIResult('sleep-ai-result', adjustment, 'RECOVERY ANALYSIS');
+  } catch(e) {
+    document.getElementById('sleep-ai-result').innerHTML = `<div style="color:var(--red);font-size:14px;">⚠️ AI analysis failed. Sleep logged without analysis.</div>`;
+    document.getElementById('sleep-ai-result').style.display = 'block';
+    state.sleepLogs.push(log);
+    saveState();
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🤖 Save & Adjust Tomorrow\'s Plan';
+}
+
+// ===== PLAN =====
+function renderPlan() {
+  if (state.currentPlan) {
+    document.getElementById('plan-content').innerHTML = `
+      <div class="ai-bubble mb">
+        <div class="ai-label">🤖 AI-ADAPTED PLAN</div>
+        <div class="ai-text">${formatAIText(state.currentPlan)}</div>
+      </div>`;
+    return;
+  }
+
+  // Default plan view
+  let html = `<div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:14px;color:var(--muted);line-height:1.7;">
+    📅 <strong style="color:var(--text);">Your schedule:</strong> 6 training days (Sun–Mon–Wed–Thu–Fri + Sat evening). <strong style="color:var(--accent);">Tuesday is your only rest day.</strong> Gym at work available <strong style="color:var(--text);">Sun–Thu 16:00–19:00</strong>. Saturday is a flexible evening session.
+  </div>`;
+  DEFAULT_PLAN.days.forEach(d => {
+    const isRest = !d.exercises.length;
+    const timeBadge = d.gym
+      ? `<span class="tag tag-blue" style="font-size:11px;">🏢 Work Gym · ${d.time}</span>`
+      : d.time
+        ? `<span class="tag tag-orange" style="font-size:11px;">🌆 ${d.time}</span>`
+        : `<span class="tag tag-red" style="font-size:11px;">😴 REST</span>`;
+    html += `
+      <div class="card ${isRest ? '' : 'card-glow'} mb">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${isRest?'8':'16'}px;flex-wrap:wrap;gap:8px;">
+          <div class="card-title" style="${isRest ? 'color:var(--muted);margin-bottom:0' : 'margin-bottom:0'}">${d.day.toUpperCase()} — ${d.type.toUpperCase()} <span style="font-family:'DM Sans';font-size:12px;font-weight:500;letter-spacing:0;color:var(--muted)">${d.focus}</span></div>
+          ${timeBadge}
+        </div>
+        ${isRest ? '<div style="font-size:14px;color:var(--muted);">Your only rest day. Active recovery only — walk, stretch, foam roll. Protect this day.</div>' :
+          d.exercises.map((e, i) => `
+            <div class="plan-exercise">
+              <div class="plan-num">0${i+1}</div>
+              <div class="plan-body">
+                <div class="plan-name">${e.name}</div>
+                <div class="plan-why">${e.note}</div>
+              </div>
+              <div class="plan-sets">${e.sets} × ${e.reps}</div>
+            </div>`).join('')}
+      </div>`;
+  });
+
+  html += `<div style="margin-top:16px;padding:16px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:10px;font-size:14px;color:var(--muted);">
+    💡 Log <strong style="color:var(--text);">2–3 workouts</strong> to unlock AI-adapted plan generation. The AI will rebalance exercise volume, progression speed, and recovery based on your actual performance.
+  </div>`;
+
+  document.getElementById('plan-content').innerHTML = html;
+}
+
+async function regeneratePlan() {
+  const btn = document.querySelector('#page-plan .btn-ai');
+  btn.disabled = true; btn.textContent = 'Generating...';
+
+  const modal = document.getElementById('ai-modal');
+  document.getElementById('modal-title').textContent = 'GENERATING YOUR PLAN';
+  document.getElementById('modal-body').innerHTML = `<div class="ai-loading" style="padding:20px 0;">Building your personalized plan <div class="dots"><span></span><span></span><span></span></div></div>`;
+  modal.classList.add('open');
+
+  try {
+    const context = getUserContext();
+    const plan = await callAI(
+      `You are an elite calisthenics and CrossFit coach. Create a precise, adaptive weekly training plan based on the athlete's performance data. Be very specific with progressions. Format clearly with days, exercises, sets/reps. Under 600 words.`,
+      `${context}
+
+Based on this athlete's performance history, create their NEXT WEEK'S training plan. Be specific about:
+- Which exercises to progress, maintain, or regress based on their logged RPEs and reps
+- Set/rep prescriptions adapted to what they've been achieving
+- Any exercises to avoid based on pain notes
+- Recovery day activities based on their sleep patterns
+
+Format as a clear week plan: Monday through Sunday with exercises, sets×reps, and a brief reason for each adjustment.`
+    );
+
+    state.currentPlan = plan;
+    saveState();
+    document.getElementById('modal-body').innerHTML = `<div class="ai-text">${formatAIText(plan)}</div>`;
+    document.getElementById('modal-title').textContent = 'YOUR ADAPTED PLAN';
+    renderPlan();
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = `<div style="color:var(--red);">Failed to generate plan. Please try again.</div>`;
+  }
+
+  btn.disabled = false; btn.innerHTML = '🔄 Regenerate Plan';
+}
+
+// ===== NUTRITION =====
+function renderNutrition() {
+  if (state.currentNutrition) {
+    document.getElementById('nutrition-content').innerHTML = `
+      <div class="ai-bubble">
+        <div class="ai-label">🤖 AI-ADAPTED NUTRITION</div>
+        <div class="ai-text">${formatAIText(state.currentNutrition)}</div>
+      </div>`;
+    return;
+  }
+
+  const todayIsTraining = new Date().getDay() !== 2; // Only Tuesday (2) is rest day
+  const plan = todayIsTraining ? DEFAULT_NUTRITION.trainingDay : DEFAULT_NUTRITION.restDay;
+
+  let html = `
+    <div class="g4 mb">
+      <div class="stat"><div class="stat-val">${plan.calories}</div><div class="stat-lbl">Calories</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--accent3)">${plan.protein}g</div><div class="stat-lbl">Protein</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--accent)">${plan.carbs}g</div><div class="stat-lbl">Carbs</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--accent2)">${plan.fat}g</div><div class="stat-lbl">Fat</div></div>
+    </div>
+    <div class="card card-glow mb">
+      <div class="card-title">${todayIsTraining ? '⚡ Training Day Meals' : '😴 Rest Day Meals'}</div>`;
+
+  plan.meals.forEach(m => {
+    html += `
+      <div class="meal-item">
+        <div class="meal-time-badge">${m.time}</div>
+        <div class="meal-body">
+          <div class="meal-name">${m.name}</div>
+          <div class="meal-desc">${m.desc}</div>
+        </div>
+        <div class="meal-kcal">${m.kcal}<span>kcal</span></div>
+      </div>`;
+  });
+
+  html += `</div>`;
+  document.getElementById('nutrition-content').innerHTML = html;
+}
+
+async function regenerateNutrition() {
+  const btn = document.querySelector('#page-nutrition .btn-ai');
+  btn.disabled = true; btn.textContent = 'Calculating...';
+
+  try {
+    const context = getUserContext();
+    const nutrition = await callAI(
+      `You are a sports nutritionist specializing in calisthenics and CrossFit athletes. Create precise meal plans with timing, macros, and food choices adapted to the athlete's training load. Be specific and practical. Under 500 words.`,
+      `${context}
+
+Create an adapted nutrition plan for this week. Consider:
+- Their training schedule and intensity based on logs
+- Recovery needs based on sleep quality
+- Calorie/macro adjustments based on performance trends
+- Specific meal timing around their workout schedule
+- Practical food choices
+
+Provide: Training day plan, Rest day plan, and any specific adjustments based on their data.`
+    );
+
+    state.currentNutrition = nutrition;
+    saveState();
+    renderNutrition();
+  } catch(e) {
+    alert('Failed to generate nutrition plan. Try again.');
+  }
+
+  btn.disabled = false; btn.innerHTML = '🔄 Recalculate';
+}
+
+// ===== HISTORY =====
+function renderHistory() {
+  const all = [...state.workoutLogs.map(l => ({...l, logType:'workout'})), ...state.sleepLogs.map(l => ({...l, logType:'sleep'}))]
+    .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  if (!all.length) {
+    document.getElementById('history-list').innerHTML = `<div style="text-align:center;padding:60px;color:var(--muted);">
+      <div style="font-size:48px;margin-bottom:16px;">📋</div>
+      <div style="font-family:'Bebas Neue';font-size:24px;color:var(--muted);">NO LOGS YET</div>
+      <div style="font-size:14px;margin-top:8px;">Start logging your workouts and sleep to see your history here.</div>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('history-list').innerHTML = all.map(l => {
+    const date = new Date(l.date).toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short'});
+    if (l.logType === 'workout') {
+      const doneCount = l.exercises.reduce((a,e) => a + e.sets.filter(s => s.done).length, 0);
+      const totalSets = l.exercises.reduce((a,e) => a + e.sets.length, 0);
+      return `<div class="log-entry">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span class="tag tag-blue">💪 WORKOUT</span>
+            <span style="font-weight:600;font-size:14px;">${l.type}</span>
+          </div>
+          <div class="log-summary">${l.focus} · ${doneCount}/${totalSets} sets completed · Feel ${l.sessionFeel}/10 · Energy ${l.energyIn}/10</div>
+          ${l.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">"${l.notes}"</div>` : ''}
+          ${l.aiInsight ? `<div style="font-size:12px;color:var(--accent);margin-top:6px;cursor:pointer;" onclick="showInsight(\`${l.aiInsight.replace(/`/g,"'")}\`)">🤖 View AI Analysis →</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Bebas Neue';font-size:36px;color:${l.sessionFeel>=7?'var(--accent3)':l.sessionFeel>=5?'var(--accent)':'var(--red)'};">${l.sessionFeel}</div>
+          <div class="log-date">${date}</div>
+        </div>
+      </div>`;
+    } else {
+      return `<div class="log-entry">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span class="tag tag-green">😴 SLEEP</span>
+            <span style="font-weight:600;font-size:14px;">${l.hours}h sleep</span>
+          </div>
+          <div class="log-summary">Quality ${l.quality}/10 · Morning energy ${l.morningEnergy}/10 · Stress ${l.stress}/10 · Hydration: ${l.hydration}</div>
+          ${l.soreness ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;">Soreness: ${l.soreness}</div>` : ''}
+          ${l.aiAdjustment ? `<div style="font-size:12px;color:var(--accent3);margin-top:6px;cursor:pointer;" onclick="showInsight(\`${l.aiAdjustment.replace(/`/g,"'")}\`)">🤖 View Recovery Analysis →</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Bebas Neue';font-size:36px;color:${l.quality>=7?'var(--accent3)':l.quality>=5?'var(--accent)':'var(--red)'};">${l.quality}</div>
+          <div class="log-date">${date}</div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+function showInsight(text) {
+  document.getElementById('modal-title').textContent = 'AI ANALYSIS';
+  document.getElementById('modal-body').innerHTML = `<div class="ai-text">${formatAIText(text)}</div>`;
+  document.getElementById('ai-modal').classList.add('open');
+}
+
+// ===== PROFILE =====
+function loadProfile() {
+  const p = state.profile;
+  document.getElementById('p-name').value = p.name || '';
+  document.getElementById('p-age').value = p.age;
+  document.getElementById('p-weight').value = p.weight;
+  document.getElementById('p-height').value = p.height;
+  document.getElementById('p-background').value = p.background;
+  document.getElementById('p-months').value = p.months;
+  document.getElementById('p-goal').value = p.goal;
+  document.getElementById('p-injuries').value = p.injuries || '';
+}
+
+function saveProfile() {
+  state.profile = {
+    name: document.getElementById('p-name').value,
+    age: parseInt(document.getElementById('p-age').value),
+    weight: parseFloat(document.getElementById('p-weight').value),
+    height: parseInt(document.getElementById('p-height').value),
+    background: document.getElementById('p-background').value,
+    months: parseInt(document.getElementById('p-months').value),
+    goal: document.getElementById('p-goal').value,
+    injuries: document.getElementById('p-injuries').value,
+  };
+  state.currentPlan = null;
+  state.currentNutrition = null;
+  saveState();
+  const btn = document.querySelector('#page-profile .btn-ai');
+  btn.textContent = '✅ Saved!';
+  btn.style.background = 'rgba(57,255,143,0.2)';
+  btn.style.color = 'var(--accent3)';
+  setTimeout(() => { btn.innerHTML = '💾 Save Profile'; btn.style = ''; }, 2000);
+}
+
+// ===== INIT =====
+async function init() {
+  await loadState();
+  renderHome();
+  // Pre-fill profile name if saved
+  if (state.profile.name) {
+    document.querySelector('.logo').innerHTML = `<div class="logo-dot"></div> FORGE<span style="color:var(--text)">FIT</span> <span style="font-size:12px;color:var(--muted);letter-spacing:1px">${state.profile.name.toUpperCase()}</span>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
